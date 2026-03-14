@@ -1,9 +1,9 @@
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function POST(req: Request) {
   try {
@@ -52,13 +52,13 @@ Guidelines:
 
     const messages = [
       { role: 'system', content: systemPrompt },
-      ...history.slice(-10), // Keep last 10 messages for context
+      ...history.slice(-10),
       { role: 'user', content: message }
     ];
 
-    const completion = await groq.chat.completions.create({
-      messages: messages as any,
-      model: 'llama-3.3-70b-versatile',
+    const completion = await openai.chat.completions.create({
+      messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      model: 'gpt-4o-mini',
       max_tokens: 2048,
       temperature: 0.7,
     });
@@ -67,8 +67,9 @@ Guidelines:
 
     return NextResponse.json({ response: aiResponse });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[Chat API] Error:', error);
-    return NextResponse.json({ message: error.message || 'Internal Server Error' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Internal Server Error';
+    return NextResponse.json({ message }, { status: 500 });
   }
 }

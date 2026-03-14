@@ -59,7 +59,7 @@ export default function SavedVideosPage() {
             {summaries.map((summary) => (
               <Link 
                 key={summary.id} 
-                href={`/?id=${summary.id}`}
+                href={`/summarise?id=${summary.id}`}
                 className="group bg-white dark:bg-[#191e16]/40 rounded-[2.5rem] border border-emerald-100 dark:border-white/5 overflow-hidden transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-amber-500/10 shadow-sm relative"
               >
                 <div className="aspect-video relative overflow-hidden">
@@ -95,7 +95,7 @@ export default function SavedVideosPage() {
               <p className="text-[#646e5a] dark:text-slate-400 font-medium max-w-sm mx-auto">Start starring your favorite summaries to see them here.</p>
             </div>
             <Link 
-              href="/"
+              href="/summarise"
               className="inline-flex items-center gap-2 bg-[#111827] dark:bg-amber-500 text-white dark:text-[#0a0a0a] px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-xs"
             >
               Browse Summarizer <ArrowRight size={16} />

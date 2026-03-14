@@ -89,7 +89,7 @@ export default function SearchDropdown() {
                 {results.map((result) => (
                   <Link
                     key={result.id}
-                    href={`/ai-yt-summariser?id=${result.id}`}
+                    href={`/summarise?id=${result.id}`}
                     onClick={() => setIsOpen(false)}
                     className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#f0f4e6] dark:hover:bg-white/5 transition-all group"
                   >
