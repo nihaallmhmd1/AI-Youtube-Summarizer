@@ -61,8 +61,9 @@ export async function POST(req: Request) {
       transcriptText = await fetchTranscriptWithStealth(videoId);
     } catch (error: any) {
       console.error('[API] Transcript error:', error.message);
-      let errorMessage = 'Could not fetch transcript for this video.';
-      if (error.message === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
+      let errorMessage = error.message;
+      if (!errorMessage) errorMessage = 'Could not fetch transcript for this video.';
+      if (errorMessage === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
       return NextResponse.json({ message: errorMessage }, { status: 400 });
     }
 
