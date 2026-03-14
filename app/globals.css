@@ -1,0 +1,94 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 253, 252, 240; /* Light Beige */
+  --foreground: 20, 30, 15; /* Dark Moss */
+  --card-bg: 255, 255, 255;
+  --card-border: 212, 230, 181; /* Pale Green */
+  --primary: 116, 159, 130; /* Sage Green */
+  --accent: 74, 103, 65; /* Forest Green */
+  --muted: 100, 110, 90;
+}
+
+.dark {
+  --background: 15, 20, 12; /* Deep Forest Black */
+  --foreground: 240, 245, 230; /* Pale Cream */
+  --card-bg: 25, 30, 22;
+  --card-border: 45, 55, 40;
+  --primary: 148, 184, 120; /* Lighter Sage */
+  --accent: 180, 210, 160;
+  --muted: 140, 150, 130;
+}
+
+body {
+  color: rgb(var(--foreground));
+  background: rgb(var(--background));
+  font-family: 'Inter', sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Glassmorphism Classes */
+.glass {
+  background: rgba(var(--card-bg), 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--card-border), 0.1);
+}
+
+.dark .glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.glass-indigo {
+  background: rgba(var(--indigo-tint), 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(var(--indigo-tint), 0.1);
+}
+
+.dark .glass-indigo {
+  background: rgba(79, 70, 229, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Custom Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.mask-blur {
+  mask-image: radial-gradient(circle, black 0%, transparent 80%);
+}
