@@ -19,10 +19,6 @@ const openrouter = new OpenAI({
   }
 });
 
-// Secondary / Specialized Features (GPT-4o-mini)
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || 'dummy_key'
-});
 
 export async function POST(req: Request) {
   try {

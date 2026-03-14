@@ -6,7 +6,6 @@ import SearchDropdown from '@/components/SearchDropdown';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import ProfileDropdown from '@/components/ProfileDropdown';
 import SettingsPanel from '@/components/SettingsPanel';
-import AIAgent from '@/components/AIAgent';
 import Link from 'next/link';
 import { createClientComponent } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
@@ -74,8 +73,6 @@ export default function DashboardContainer({
         </main>
       </div>
 
-      {/* Interactive AI Agent */}
-      <AIAgent />
     </div>
   );
 }
