@@ -1,87 +1,134 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
-import { Volume2, Loader2, CircleStop } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Volume2, CircleStop, Loader2 } from 'lucide-react';
 
 interface TTSButtonProps {
   text: string;
   language?: string;
 }
 
-export default function TTSButton({ text, language = 'en' }: TTSButtonProps) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  'English': 'en-US',
+  'Spanish': 'es-ES',
+  'French': 'fr-FR',
+  'German': 'de-DE',
+  'Italian': 'it-IT',
+  'Japanese': 'ja-JP',
+  'Korean': 'ko-KR',
+  'Chinese': 'zh-CN',
+  'Hindi': 'hi-IN',
+  'Malayalam': 'ml-IN',
+  'Arabic': 'ar-SA',
+  'Portuguese': 'pt-PT',
+  'Russian': 'ru-RU',
+  'Turkish': 'tr-TR',
+  'Dutch': 'nl-NL',
+  'Polish': 'pl-PL',
+  'Swedish': 'sv-SE',
+  'Bengali': 'bn-IN',
+  'Tamil': 'ta-IN',
+  'Telugu': 'te-IN',
+  'Urdu': 'ur-PK',
+  'Vietnamese': 'vi-VN',
+  'Thai': 'th-TH',
+  'Greek': 'el-GR',
+  'Hebrew': 'he-IL',
+};
 
-  const getLanguageCode = (lang: string) => {
-    const map: Record<string, string> = {
-      'English': 'en',
-      'Spanish': 'es',
-      'French': 'fr',
-      'German': 'de',
-      'Italian': 'it',
-      'Japanese': 'ja',
-      'Korean': 'ko',
-      'Chinese': 'zh-CN',
-      'Hindi': 'hi',
-      'Malayalam': 'ml',
-      'Arabic': 'ar',
-      'Portuguese': 'pt',
-      'Russian': 'ru',
+export default function TTSButton({ text, language = 'English' }: TTSButtonProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [supported, setSupported] = useState(true);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) {
+      setSupported(false);
+    }
+    // Cleanup on unmount
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
     };
-    return map[lang] || 'en';
-  };
+  }, []);
+
+  // Stop when text changes
+  useEffect(() => {
+    if (isPlaying) {
+      window.speechSynthesis?.cancel();
+      setIsPlaying(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text]);
 
   const handleSpeak = () => {
+    if (!window.speechSynthesis) return;
+
     if (isPlaying) {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      window.speechSynthesis.cancel();
       setIsPlaying(false);
       return;
     }
 
-    setLoading(true);
-    const langCode = getLanguageCode(language);
-    
-    // Split text into chunks to respect Google TTS length limits (~200 chars)
-    // For simplicity, we just take the first 200 for now or use a cleaner split if needed
-    // However, for a "Play" experience, we'll try the full text first and see if it works
-    const encodedText = encodeURIComponent(text.substring(0, 500)); 
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${langCode}&client=tw-ob`;
+    setIsLoading(true);
+    const langCode = LANGUAGE_CODE_MAP[language] || 'en-US';
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio(url);
-    } else {
-      audioRef.current.src = url;
-    }
+    // Clean the text: strip markdown symbols for better reading
+    const cleanText = text
+      .replace(/#{1,6}\s/g, '')
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/`/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\n+/g, ' ')
+      .trim();
 
-    audioRef.current.oncanplaythrough = () => {
-      setLoading(false);
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = langCode;
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    // Try to pick a matching voice for the language
+    const voices = window.speechSynthesis.getVoices();
+    const matchingVoice = voices.find(v => v.lang.startsWith(langCode.split('-')[0]));
+    if (matchingVoice) utterance.voice = matchingVoice;
+
+    utterance.onstart = () => {
+      setIsLoading(false);
       setIsPlaying(true);
-      audioRef.current?.play();
     };
 
-    audioRef.current.onended = () => {
+    utterance.onend = () => {
       setIsPlaying(false);
+      setIsLoading(false);
     };
 
-    audioRef.current.onerror = () => {
-      setLoading(false);
+    utterance.onerror = () => {
       setIsPlaying(false);
-      console.error('TTS Error');
+      setIsLoading(false);
     };
+
+    utteranceRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+
+    // Safeguard: if onstart doesn't fire (some browsers), clear loading after 500ms
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
   };
+
+  if (!supported) return null;
 
   return (
     <button
       onClick={handleSpeak}
-      disabled={loading}
       className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all flex items-center gap-2 group"
-      title={isPlaying ? "Stop listening" : "Listen to this"}
+      title={isPlaying ? 'Stop listening' : 'Listen to this'}
     >
-      {loading ? (
+      {isLoading ? (
         <Loader2 size={16} className="animate-spin" />
       ) : isPlaying ? (
         <CircleStop size={16} className="text-rose-500" />
@@ -89,7 +136,7 @@ export default function TTSButton({ text, language = 'en' }: TTSButtonProps) {
         <Volume2 size={16} className="group-hover:scale-110 transition-transform" />
       )}
       <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">
-        {isPlaying ? "Stop" : "Listen"}
+        {isPlaying ? 'Stop' : 'Listen'}
       </span>
     </button>
   );
