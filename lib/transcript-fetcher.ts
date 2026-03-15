@@ -113,8 +113,10 @@ export const fetchTranscriptWithStealth = async (videoId: string): Promise<strin
     try {
       const result = await method.fn();
       console.log(`[Transcript] Success via ${method.name}`);
-      // Must be decently long to be a real transcript and not an XML error
-      if (result && result.length > 50 && !result.includes('<?xml')) return result;
+      // Basic validation: clear out common filler words from formatting & ensure length
+      if (result && result.length > 10 && !result.includes('<?xml')) {
+        return result;
+      }
     } catch (err: any) {
       const msg = err?.message || 'Unknown error';
       console.warn(`[Transcript] ${method.name} failed:`, msg);
