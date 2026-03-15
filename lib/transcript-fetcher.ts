@@ -1,45 +1,47 @@
 /**
- * Robust YouTube transcript fetcher with proxy fallback methods.
- * Designed to work reliably on Vercel serverless by bypassing YouTube IP blocks.
+ * Robust YouTube transcript fetcher with multiple fallback methods.
+ * Uses youtubei.js (Innertube), youtube-ext, proxy APIs, and youtube-transcript.
  */
 import { YoutubeTranscript } from 'youtube-transcript';
+import { Innertube } from 'youtubei.js';
 import youtubeExt from 'youtube-ext';
 
 /**
- * Method 1: Kome.ai API (Free proxy, reliable, no auth needed)
+ * Method 1: Using Youtubei.js (Reverse-engineered internal API)
+ * Extremely reliable for bypassing Datacenter IP blocking.
  */
-async function fetchViaKome(videoId: string): Promise<string> {
-  console.log(`[Transcript] Method 1: Kome API for ${videoId}`);
-
-  const res = await fetch(`https://api.kome.ai/api/v1/transcript?video_id=${videoId}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      // Provide a generic user agent to avoid being blocked
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-    }
+async function fetchViaYoutubei(videoId: string): Promise<string> {
+  console.log(`[Transcript] Method 1: Youtubei.js for ${videoId}`);
+  
+  const yt = await Innertube.create({
+    lang: 'en',
+    location: 'US',
+    retrieve_player: false,
   });
 
-  if (!res.ok) throw new Error(`Kome proxy responded with ${res.status}`);
+  const info = await yt.getInfo(videoId);
+  const transcriptData = await info.getTranscript();
 
-  const data = await res.json();
-  if (!data || !data.transcript) {
-    throw new Error('Kome proxy returned empty transcript');
+  if (!transcriptData || !transcriptData.transcript || !transcriptData.transcript.content) {
+    throw new Error('youtubei.js returned empty transcript');
   }
 
-  // The transcript might be an array of objects or a single string
-  if (Array.isArray(data.transcript)) {
-    return data.transcript.map((t: any) => t.text).join(' ').trim();
+  const segments = transcriptData.transcript.content.body?.initial_segments;
+  if (!segments || segments.length === 0) {
+    throw new Error('youtubei.js returned no segments');
   }
-  
-  return String(data.transcript).trim();
+
+  const text = segments.map((seg: any) => seg.snippet?.text).join(' ').trim();
+  if (!text) throw new Error('youtubei.js returned empty text');
+
+  return text;
 }
 
 /**
- * Method 2: youtubetranscript.com API (Free proxy)
+ * Method 2: Third Party proxy (youtubetranscript.com)
  */
-async function fetchViaProxyUrl1(videoId: string): Promise<string> {
+async function fetchViaProxyUrl(videoId: string): Promise<string> {
   console.log(`[Transcript] Method 2: Proxy API for ${videoId}`);
-
   const res = await fetch(`https://youtubetranscript.com/?server_vid=${videoId}`);
   if (!res.ok) throw new Error(`Proxy responded with ${res.status}`);
 
@@ -64,7 +66,7 @@ async function fetchViaProxyUrl1(videoId: string): Promise<string> {
 }
 
 /**
- * Method 3: youtube-ext package (fallback for local dev)
+ * Method 3: youtube-ext package (fallback)
  */
 async function fetchViaYoutubeExt(videoId: string): Promise<string> {
   console.log(`[Transcript] Method 3: youtube-ext for ${videoId}`);
@@ -96,13 +98,15 @@ async function fetchViaYoutubeTranscriptPackage(videoId: string): Promise<string
     .trim();
 }
 
+
 /**
- * Main export: tries multiple reliable proxy/scraping methods in sequence
+ * Main export: tries multiple reliable methods in sequence
  */
 export const fetchTranscriptWithStealth = async (videoId: string): Promise<string> => {
+  // Ordered by reliability on serverless functions based on testing
   const methods = [
-    { name: 'Kome.ai proxy', fn: () => fetchViaKome(videoId) },
-    { name: 'youtubetranscript.com API', fn: () => fetchViaProxyUrl1(videoId) },
+    { name: 'youtubei.js API', fn: () => fetchViaYoutubei(videoId) },
+    { name: 'youtubetranscript.com proxy', fn: () => fetchViaProxyUrl(videoId) },
     { name: 'youtube-ext package', fn: () => fetchViaYoutubeExt(videoId) },
     { name: 'youtube-transcript package', fn: () => fetchViaYoutubeTranscriptPackage(videoId) },
   ];
@@ -113,6 +117,7 @@ export const fetchTranscriptWithStealth = async (videoId: string): Promise<strin
     try {
       const result = await method.fn();
       console.log(`[Transcript] Success via ${method.name}`);
+      
       // Basic validation: clear out common filler words from formatting & ensure length
       if (result && result.length > 10 && !result.includes('<?xml')) {
         return result;
@@ -122,7 +127,7 @@ export const fetchTranscriptWithStealth = async (videoId: string): Promise<strin
       console.warn(`[Transcript] ${method.name} failed:`, msg);
       errors.push(`${method.name}: ${msg}`);
 
-      // Propagate definitive errors perfectly
+      // Propagate definitive errors (e.g. video has no captions at all)
       if (msg.includes('disabled') || msg.includes('NO_CAPTIONS') || msg.includes('No transcript')) {
         throw new Error('Captions are disabled for this video. Please try a video with subtitles enabled.');
       }
@@ -130,5 +135,5 @@ export const fetchTranscriptWithStealth = async (videoId: string): Promise<strin
   }
 
   console.error('[Transcript] All methods failed:', errors);
-  throw new Error('All transcript fetch methods failed. The video might not have captions, or YouTube is blocking the server request.');
+  throw new Error('Could not fetch transcript for this video.');
 };
