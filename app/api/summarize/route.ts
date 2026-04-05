@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const { url: videoUrl, mode = 'standard', language = 'English' } = await req.json();
+    const { url: videoUrl, mode = 'standard', language = 'English', useFallback = false } = await req.json();
     if (!videoUrl) return NextResponse.json({ message: 'URL is required' }, { status: 400 });
 
     const videoIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
@@ -57,14 +57,56 @@ export async function POST(req: Request) {
     }
 
     let transcriptText = '';
-    try {
-      transcriptText = await fetchTranscriptWithStealth(videoId);
-    } catch (error: any) {
-      console.error('[API] Transcript error:', error.message);
-      let errorMessage = error.message;
-      if (!errorMessage) errorMessage = 'Could not fetch transcript for this video.';
-      if (errorMessage === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
-      return NextResponse.json({ message: errorMessage }, { status: 400 });
+    if (useFallback) {
+      try {
+        console.log('[API] Using AI audio transcription fallback...');
+        const { Innertube } = await import('youtubei.js');
+        const Groq = (await import('groq-sdk')).default;
+        
+        const yt = await Innertube.create({ location: 'US' });
+        const info = await yt.getInfo(videoId);
+        
+        const stream = await info.download({ type: 'audio', quality: 'best' });
+        const reader = stream.getReader();
+        const chunks: Uint8Array[] = [];
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(value);
+        }
+        const buffer = Buffer.concat(chunks);
+        
+        const file = new File([buffer], 'audio.mp4', { type: 'audio/mp4' });
+        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+        const transcription = await groq.audio.transcriptions.create({
+          file,
+          model: 'whisper-large-v3'
+        });
+        
+        transcriptText = transcription.text;
+        console.log('[API] Fallback transcription complete length:', transcriptText.length);
+        if (!transcriptText || transcriptText.length < 10) {
+          throw new Error('AI transcription returned empty result');
+        }
+      } catch (audioErr: any) {
+        console.error('[API] AI transcription failed:', audioErr);
+        return NextResponse.json({ message: 'Failed to transcribe audio automatically.' }, { status: 400 });
+      }
+    } else {
+      try {
+        transcriptText = await fetchTranscriptWithStealth(videoId);
+      } catch (error: any) {
+        console.error('[API] Transcript error:', error.message);
+        let errorMessage = error.message;
+        if (!errorMessage) errorMessage = 'Could not fetch transcript for this video.';
+        if (errorMessage === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
+        
+        if (errorMessage.includes('disabled') || errorMessage.includes('NO_CAPTIONS')) {
+          return NextResponse.json({ message: 'FALLBACK_REQUIRED' }, { status: 400 });
+        }
+        
+        return NextResponse.json({ message: errorMessage }, { status: 400 });
+      }
     }
 
     if (mode === 'standard' && language === 'English') {
