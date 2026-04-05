@@ -70,38 +70,21 @@ export async function POST(req: Request) {
     let transcriptText = '';
     if (useFallback) {
       try {
-        console.log('[API] Using AI audio transcription fallback...');
+        console.log('[API] Using AI metadata fallback (Title + Description)...');
         const { Innertube } = await import('youtubei.js');
-        const Groq = (await import('groq-sdk')).default;
-        
         const yt = await Innertube.create({ location: 'US' });
         const info = await yt.getInfo(videoId);
         
-        const stream = await info.download({ type: 'audio', quality: 'best' });
-        const reader = stream.getReader();
-        const chunks: Uint8Array[] = [];
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          if (value) chunks.push(value);
-        }
-        const buffer = Buffer.concat(chunks);
+        const basicInfo = info.basic_info;
+        const channelName = basicInfo.author || 'Unknown Channel';
+        const description = basicInfo.short_description || (basicInfo as any).description || 'No description available.';
+        const title = basicInfo.title || videoTitle;
         
-        const file = new File([buffer], 'audio.mp4', { type: 'audio/mp4' });
-        const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-        const transcription = await groq.audio.transcriptions.create({
-          file,
-          model: 'whisper-large-v3'
-        });
-        
-        transcriptText = transcription.text;
-        console.log('[API] Fallback transcription complete length:', transcriptText.length);
-        if (!transcriptText || transcriptText.length < 10) {
-          throw new Error('AI transcription returned empty result');
-        }
-      } catch (audioErr: any) {
-        console.error('[API] AI transcription failed:', audioErr);
-        return NextResponse.json({ message: 'Failed to transcribe audio automatically.' }, { status: 400 });
+        transcriptText = `Title: ${title}\nChannel: ${channelName}\nDescription:\n${description}`;
+        console.log('[API] Fallback metadata gathered successfully');
+      } catch (fallbackErr: any) {
+        console.error('[API] Metadata fallback failed:', fallbackErr);
+        return NextResponse.json({ message: 'Failed to access video metadata automatically.' }, { status: 400 });
       }
     } else {
       try {
@@ -155,13 +138,20 @@ export async function POST(req: Request) {
       : "You are an expert summarizer. Generate structured JSON.";
 
     let prompt = `Video: "${videoTitle}"\nLanguage: ${language}\nMode: ${mode}\n\n`;
+    if (useFallback) {
+      prompt += "INSTRUCTION: Generate a detailed and accurate summary of this video based on the title and description below. Infer the likely content.\n\n";
+    }
     if (mode === 'detailed_summary') prompt += `Generate deep summary with headings. JSON: { "translated_title": "string", "detailed_summary": "markdown" }`;
     else if (mode === 'points_oriented') prompt += `Generate 8-10 value points. JSON: { "translated_title": "string", "points_oriented": ["string"] }`;
     else if (mode === 'timestamped_highlights') prompt += `Extract timestamps. JSON: { "translated_title": "string", "timestamped_highlights": ["00:00 – desc"] }`;
     else if (mode === 'reading_mode') prompt += `Write an article. JSON: { "reading_mode": { "title": "string", "introduction": "string", "sections": [{"heading": "string", "content": "string"}], "conclusion": "string" } }`;
     else prompt += `Generate comprehensive summary. JSON: { "translated_title": "string", "summary": "para", "key_points": ["s"], "highlights": ["s"], "key_takeaways": ["s"] }`;
     
-    prompt += `\n\nTranscript:\n${transcriptSnippet}`;
+    if (useFallback) {
+      prompt += `\n\nVideo Metadata Info:\n${transcriptSnippet}`;
+    } else {
+      prompt += `\n\nTranscript:\n${transcriptSnippet}`;
+    }
 
     const cleanAndParseJSON = (str: string) => {
       try {

@@ -127,10 +127,7 @@ function SummariserContent() {
       let data = await response.json();
       
       if (!response.ok && (data.status === 'no_captions' || data.status === 'transcript_blocked')) {
-        const baseNotice = data.status === 'no_captions' 
-          ? 'Captions not available for this video.' 
-          : 'Video accessible but transcript is blocked or restricted.';
-        setNotice(`${baseNotice} Using fallback summarisation method.`);
+        setNotice('Transcript unavailable. Summary generated using AI understanding.');
         
         response = await fetch('/api/summarize', {
           method: 'POST',
