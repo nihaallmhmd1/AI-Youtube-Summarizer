@@ -126,8 +126,12 @@ function SummariserContent() {
       });
       let data = await response.json();
       
-      if (!response.ok && data.message === 'Video accessible but captions are not available.') {
-        setNotice('Captions not available. Generating summary using AI transcription.');
+      if (!response.ok && (data.status === 'no_captions' || data.status === 'transcript_blocked')) {
+        const baseNotice = data.status === 'no_captions' 
+          ? 'Captions not available for this video.' 
+          : 'Video accessible but transcript is blocked or restricted.';
+        setNotice(`${baseNotice} Using fallback summarisation method.`);
+        
         response = await fetch('/api/summarize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

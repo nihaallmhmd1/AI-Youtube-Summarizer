@@ -53,7 +53,8 @@ export async function POST(req: Request) {
       
       if (!resp.ok) {
         console.error(`[API-DIAGNOSTIC] YouTube accessibility check: FAILED. oEmbed returned status ${resp.status}`);
-        return NextResponse.json({ message: 'YouTube access failed from server. Possible network restriction.' }, { status: 400 });
+        console.log(`[API-DIAGNOSTIC] Final decision path: video_inaccessible`);
+        return NextResponse.json({ status: 'video_inaccessible', message: 'Video cannot be accessed from server.' }, { status: 400 });
       }
       
       const data = await resp.json();
@@ -62,7 +63,8 @@ export async function POST(req: Request) {
       
     } catch (e: any) {
       console.error('[API-DIAGNOSTIC] YouTube accessibility check: FAILED. Error:', e.message);
-      return NextResponse.json({ message: 'YouTube access failed from server. Possible network restriction.' }, { status: 400 });
+      console.log(`[API-DIAGNOSTIC] Final decision path: video_inaccessible`);
+      return NextResponse.json({ status: 'video_inaccessible', message: 'Video cannot be accessed from server.' }, { status: 400 });
     }
 
     let transcriptText = '';
@@ -104,20 +106,41 @@ export async function POST(req: Request) {
     } else {
       try {
         transcriptText = await fetchTranscriptWithStealth(videoId);
-        console.log(`[API-DIAGNOSTIC] Transcript fetch result: SUCCESS. Fetched ${transcriptText.length} characters.`);
+        console.log(`[API-DIAGNOSTIC] Transcript fetch status: success`);
+        console.log(`[API-DIAGNOSTIC] Final decision path: standard_transcript`);
       } catch (error: any) {
-        console.error('[API] Transcript error:', error.message);
-        let errorMessage = error.message;
-        if (!errorMessage) errorMessage = 'Could not fetch transcript for this video.';
-        if (errorMessage === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
+        console.warn('[API-DIAGNOSTIC] Transcript fetch failed with standard method. Error:', error.message);
         
-        if (errorMessage.includes('disabled') || errorMessage.includes('NO_CAPTIONS')) {
-          console.log(`[API-DIAGNOSTIC] Transcript fetch result: Video accessible but captions are not available.`);
-          return NextResponse.json({ message: 'Video accessible but captions are not available.' }, { status: 400 });
+        let hasCaptions = false;
+        try {
+          console.log(`[API-DIAGNOSTIC] Fallback checking captionTracks availability natively...`);
+          const { Innertube } = await import('youtubei.js');
+          const yt = await Innertube.create({ location: 'US' });
+          const info = await yt.getInfo(videoId);
+          if (info.captions?.caption_tracks && info.captions.caption_tracks.length > 0) {
+            hasCaptions = true;
+          }
+        } catch (checkErr: any) {
+          console.error('[API-DIAGNOSTIC] Failed to verify captionTracks via youtubei:', checkErr.message);
         }
-        
-        console.log(`[API-DIAGNOSTIC] Transcript fetch result: FAILED. Reason: ${errorMessage}`);
-        return NextResponse.json({ message: errorMessage }, { status: 400 });
+
+        console.log(`[API-DIAGNOSTIC] Caption availability: ${hasCaptions ? 'exists' : 'missing'}`);
+
+        if (!hasCaptions) {
+          console.log(`[API-DIAGNOSTIC] Transcript fetch status: failed (no captions)`);
+          console.log(`[API-DIAGNOSTIC] Final decision path: no_captions`);
+          return NextResponse.json({ 
+            status: 'no_captions', 
+            message: 'No captions available for this video.' 
+          }, { status: 400 });
+        } else {
+          console.log(`[API-DIAGNOSTIC] Transcript fetch status: blocked`);
+          console.log(`[API-DIAGNOSTIC] Final decision path: transcript_blocked`);
+          return NextResponse.json({ 
+            status: 'transcript_blocked', 
+            message: 'Transcript exists but could not be fetched (likely blocked by YouTube).' 
+          }, { status: 400 });
+        }
       }
     }
 
