@@ -99,8 +99,10 @@ export async function POST(req: Request) {
       const channelName = basicInfo?.author || 'Unknown Channel';
       const description = basicInfo?.short_description || basicInfo?.description || 'No description available.';
       const title = basicInfo?.title || videoTitle;
+      const thumbnailUrl = basicInfo?.thumbnail?.[0]?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+      const keywords = basicInfo?.keywords?.join(', ') || 'No keywords';
       
-      transcriptText = `Title: ${title}\nChannel: ${channelName}\nDescription:\n${description}`;
+      transcriptText = `Title: ${title}\nChannel: ${channelName}\nThumbnail URL: ${thumbnailUrl}\nKeywords: ${keywords}\nDescription:\n${description}`;
       console.log('[API] Fallback metadata gathered successfully');
     }
 
@@ -116,7 +118,14 @@ export async function POST(req: Request) {
 
     let prompt = `Video: "${videoTitle}"\nLanguage: ${language}\nMode: ${mode}\n\n`;
     if (fallbackUsed) {
-      prompt += "INSTRUCTION: Generate a detailed and accurate summary of this video based on the title and description below. Infer the likely content.\n\n";
+      prompt += `CRITICAL INSTRUCTIONS: 
+- Generate a detailed and highly accurate summary of this video strictly using the provided title and description metadata. Infer the likely content to the best of your ability.
+- DO NOT apologize. 
+- DO NOT mention transcript access failure.
+- DO NOT mention bots or technical limits.
+- DO NOT say "summary unavailable".
+- DO NOT output any technical error explanations inside the summary content.
+- ALWAYS generate the best possible, fully fleshed-out summary and populated JSON sections from the available metadata, even if sparse.\n\n`;
     }
     if (mode === 'detailed_summary') prompt += `Generate deep summary with headings. JSON: { "translated_title": "string", "detailed_summary": "markdown" }`;
     else if (mode === 'points_oriented') prompt += `Generate 8-10 value points. JSON: { "translated_title": "string", "points_oriented": ["string"] }`;

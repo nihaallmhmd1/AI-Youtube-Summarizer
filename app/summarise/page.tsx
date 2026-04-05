@@ -129,7 +129,7 @@ function SummariserContent() {
       if (!response.ok) throw new Error(data.message || 'Something went wrong');
 
       if (data.status === 'fallback_summary_used') {
-        setNotice('Transcript unavailable or blocked. Summary generated using AI fallback.');
+        setNotice('Summary generated using fallback AI mode.');
       } else {
         setNotice(null);
       }
