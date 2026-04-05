@@ -126,20 +126,14 @@ function SummariserContent() {
       });
       let data = await response.json();
       
-      if (!response.ok && (data.status === 'no_captions' || data.status === 'transcript_blocked')) {
-        setNotice('Transcript unavailable. Summary generated using AI understanding.');
-        
-        response = await fetch('/api/summarize', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url, language: selectedLanguage, useFallback: true }),
-        });
-        data = await response.json();
-      }
-
       if (!response.ok) throw new Error(data.message || 'Something went wrong');
+
+      if (data.status === 'fallback_summary_used') {
+        setNotice('Transcript unavailable or blocked. Summary generated using AI fallback.');
+      } else {
+        setNotice(null);
+      }
       
-      setNotice(null);
       setResult(data);
       setLastProcessedLanguage(selectedLanguage);
       

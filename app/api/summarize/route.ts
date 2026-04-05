@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
-    const { url: videoUrl, mode = 'standard', language = 'English', useFallback = false } = await req.json();
+    const { url: videoUrl, mode = 'standard', language = 'English' } = await req.json();
     if (!videoUrl) return NextResponse.json({ message: 'URL is required' }, { status: 400 });
 
     const videoIdMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
@@ -68,63 +68,40 @@ export async function POST(req: Request) {
     }
 
     let transcriptText = '';
-    if (useFallback) {
+    let fallbackUsed = false;
+    
+    try {
+      transcriptText = await fetchTranscriptWithStealth(videoId);
+      console.log(`[API-DIAGNOSTIC] Transcript fetch status: success`);
+      console.log(`[API-DIAGNOSTIC] Final decision path: transcript_success`);
+    } catch (error: any) {
+      console.warn('[API-DIAGNOSTIC] Transcript fetch failed with standard method. Error:', error.message);
+      
+      let hasCaptions = false;
+      let basicInfo: any = {};
       try {
-        console.log('[API] Using AI metadata fallback (Title + Description)...');
+        console.log(`[API-DIAGNOSTIC] Fallback checking availability natively...`);
         const { Innertube } = await import('youtubei.js');
         const yt = await Innertube.create({ location: 'US' });
         const info = await yt.getInfo(videoId);
-        
-        const basicInfo = info.basic_info;
-        const channelName = basicInfo.author || 'Unknown Channel';
-        const description = basicInfo.short_description || (basicInfo as any).description || 'No description available.';
-        const title = basicInfo.title || videoTitle;
-        
-        transcriptText = `Title: ${title}\nChannel: ${channelName}\nDescription:\n${description}`;
-        console.log('[API] Fallback metadata gathered successfully');
-      } catch (fallbackErr: any) {
-        console.error('[API] Metadata fallback failed:', fallbackErr);
-        return NextResponse.json({ message: 'Failed to access video metadata automatically.' }, { status: 400 });
-      }
-    } else {
-      try {
-        transcriptText = await fetchTranscriptWithStealth(videoId);
-        console.log(`[API-DIAGNOSTIC] Transcript fetch status: success`);
-        console.log(`[API-DIAGNOSTIC] Final decision path: standard_transcript`);
-      } catch (error: any) {
-        console.warn('[API-DIAGNOSTIC] Transcript fetch failed with standard method. Error:', error.message);
-        
-        let hasCaptions = false;
-        try {
-          console.log(`[API-DIAGNOSTIC] Fallback checking captionTracks availability natively...`);
-          const { Innertube } = await import('youtubei.js');
-          const yt = await Innertube.create({ location: 'US' });
-          const info = await yt.getInfo(videoId);
-          if (info.captions?.caption_tracks && info.captions.caption_tracks.length > 0) {
-            hasCaptions = true;
-          }
-        } catch (checkErr: any) {
-          console.error('[API-DIAGNOSTIC] Failed to verify captionTracks via youtubei:', checkErr.message);
+        basicInfo = info.basic_info;
+        if (info.captions?.caption_tracks && info.captions.caption_tracks.length > 0) {
+          hasCaptions = true;
         }
-
-        console.log(`[API-DIAGNOSTIC] Caption availability: ${hasCaptions ? 'exists' : 'missing'}`);
-
-        if (!hasCaptions) {
-          console.log(`[API-DIAGNOSTIC] Transcript fetch status: failed (no captions)`);
-          console.log(`[API-DIAGNOSTIC] Final decision path: no_captions`);
-          return NextResponse.json({ 
-            status: 'no_captions', 
-            message: 'No captions available for this video.' 
-          }, { status: 400 });
-        } else {
-          console.log(`[API-DIAGNOSTIC] Transcript fetch status: blocked`);
-          console.log(`[API-DIAGNOSTIC] Final decision path: transcript_blocked`);
-          return NextResponse.json({ 
-            status: 'transcript_blocked', 
-            message: 'Transcript exists but could not be fetched (likely blocked by YouTube).' 
-          }, { status: 400 });
-        }
+      } catch (checkErr: any) {
+        console.error('[API-DIAGNOSTIC] Failed to verify metadata via youtubei:', checkErr.message);
       }
+
+      console.log(`[API-DIAGNOSTIC] Caption availability: ${hasCaptions ? 'exists' : 'missing'}`);
+      console.log(`[API-DIAGNOSTIC] Final decision path: ${hasCaptions ? 'transcript_blocked_or_unavailable' : 'captions_disabled'}`);
+      
+      fallbackUsed = true;
+      const channelName = basicInfo?.author || 'Unknown Channel';
+      const description = basicInfo?.short_description || basicInfo?.description || 'No description available.';
+      const title = basicInfo?.title || videoTitle;
+      
+      transcriptText = `Title: ${title}\nChannel: ${channelName}\nDescription:\n${description}`;
+      console.log('[API] Fallback metadata gathered successfully');
     }
 
     if (mode === 'standard' && language === 'English') {
@@ -138,7 +115,7 @@ export async function POST(req: Request) {
       : "You are an expert summarizer. Generate structured JSON.";
 
     let prompt = `Video: "${videoTitle}"\nLanguage: ${language}\nMode: ${mode}\n\n`;
-    if (useFallback) {
+    if (fallbackUsed) {
       prompt += "INSTRUCTION: Generate a detailed and accurate summary of this video based on the title and description below. Infer the likely content.\n\n";
     }
     if (mode === 'detailed_summary') prompt += `Generate deep summary with headings. JSON: { "translated_title": "string", "detailed_summary": "markdown" }`;
@@ -147,7 +124,7 @@ export async function POST(req: Request) {
     else if (mode === 'reading_mode') prompt += `Write an article. JSON: { "reading_mode": { "title": "string", "introduction": "string", "sections": [{"heading": "string", "content": "string"}], "conclusion": "string" } }`;
     else prompt += `Generate comprehensive summary. JSON: { "translated_title": "string", "summary": "para", "key_points": ["s"], "highlights": ["s"], "key_takeaways": ["s"] }`;
     
-    if (useFallback) {
+    if (fallbackUsed) {
       prompt += `\n\nVideo Metadata Info:\n${transcriptSnippet}`;
     } else {
       prompt += `\n\nTranscript:\n${transcriptSnippet}`;
@@ -196,15 +173,25 @@ export async function POST(req: Request) {
 
     const finalTitle = responseData.translated_title || responseData.reading_mode?.title || videoTitle;
     
+    const responsePayload = {
+      ...responseData,
+      title: finalTitle,
+      videoId,
+      ...(fallbackUsed && {
+        status: "fallback_summary_used",
+        message: "Transcript could not be fetched in deployed environment. AI fallback summary was used."
+      })
+    };
+
     if (mode === 'standard' && language === 'English') {
       const { data: summaryData } = await supabase.from('summaries').insert({
         user_id: user.id, video_url: videoUrl, video_title: finalTitle, summary: responseData.summary,
         key_points: responseData.key_points, highlights: responseData.highlights, key_takeaways: responseData.key_takeaways, video_id: videoId
       }).select().single();
-      return NextResponse.json({ ...responseData, title: finalTitle, videoId, id: summaryData?.id });
+      return NextResponse.json({ ...responsePayload, id: summaryData?.id });
     }
 
-    return NextResponse.json({ ...responseData, title: finalTitle, videoId });
+    return NextResponse.json(responsePayload);
 
 
   } catch (error: unknown) {
