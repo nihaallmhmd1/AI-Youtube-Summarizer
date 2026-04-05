@@ -125,7 +125,7 @@ function SummariserContent() {
       });
       let data = await response.json();
       
-      if (!response.ok && data.message === 'FALLBACK_REQUIRED') {
+      if (!response.ok && data.message === 'Video accessible but captions are not available.') {
         setNotice('Captions not available. Generating summary using AI transcription.');
         response = await fetch('/api/summarize', {
           method: 'POST',

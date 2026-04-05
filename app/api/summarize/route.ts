@@ -45,15 +45,24 @@ export async function POST(req: Request) {
     const videoId = videoIdMatch ? videoIdMatch[1] : null;
     if (!videoId) return NextResponse.json({ message: 'Invalid YouTube URL' }, { status: 400 });
 
+    console.log(`[API-DIAGNOSTIC] Starting check for video ID: ${videoId}`);
     let videoTitle = 'YouTube Video';
     try {
-      const resp = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${videoId}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        videoTitle = data.title || 'YouTube Video';
+      const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+      const resp = await fetch(oembedUrl);
+      
+      if (!resp.ok) {
+        console.error(`[API-DIAGNOSTIC] YouTube accessibility check: FAILED. oEmbed returned status ${resp.status}`);
+        return NextResponse.json({ message: 'YouTube access failed from server. Possible network restriction.' }, { status: 400 });
       }
-    } catch (e) {
-      console.error('[API] Metadata error:', e);
+      
+      const data = await resp.json();
+      videoTitle = data.title || 'YouTube Video';
+      console.log(`[API-DIAGNOSTIC] YouTube accessibility check: SUCCESS. Title: ${videoTitle}`);
+      
+    } catch (e: any) {
+      console.error('[API-DIAGNOSTIC] YouTube accessibility check: FAILED. Error:', e.message);
+      return NextResponse.json({ message: 'YouTube access failed from server. Possible network restriction.' }, { status: 400 });
     }
 
     let transcriptText = '';
@@ -95,6 +104,7 @@ export async function POST(req: Request) {
     } else {
       try {
         transcriptText = await fetchTranscriptWithStealth(videoId);
+        console.log(`[API-DIAGNOSTIC] Transcript fetch result: SUCCESS. Fetched ${transcriptText.length} characters.`);
       } catch (error: any) {
         console.error('[API] Transcript error:', error.message);
         let errorMessage = error.message;
@@ -102,9 +112,11 @@ export async function POST(req: Request) {
         if (errorMessage === 'IP_BLOCKED') errorMessage = 'Transcription service throttled. Try again later.';
         
         if (errorMessage.includes('disabled') || errorMessage.includes('NO_CAPTIONS')) {
-          return NextResponse.json({ message: 'FALLBACK_REQUIRED' }, { status: 400 });
+          console.log(`[API-DIAGNOSTIC] Transcript fetch result: Video accessible but captions are not available.`);
+          return NextResponse.json({ message: 'Video accessible but captions are not available.' }, { status: 400 });
         }
         
+        console.log(`[API-DIAGNOSTIC] Transcript fetch result: FAILED. Reason: ${errorMessage}`);
         return NextResponse.json({ message: errorMessage }, { status: 400 });
       }
     }
@@ -167,6 +179,7 @@ export async function POST(req: Request) {
 
     const responseData = await callAI();
     console.log(`[API] Success: ${mode}`);
+    console.log(`[API-DIAGNOSTIC] Final summarisation result: SUCCESS`);
 
     const finalTitle = responseData.translated_title || responseData.reading_mode?.title || videoTitle;
     
