@@ -11,6 +11,13 @@ import { Innertube, UniversalCache } from 'youtubei.js';
 // Initialize Gemini SDK
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
 
+// Audio extraction cookies path
+import fs from 'fs';
+import path from 'path';
+
+// Audio extraction cookies path
+const YOUTUBE_COOKIES_PATH = process.env.YOUTUBE_COOKIES_PATH || 'C:\\Users\\tmnih\\Desktop\\Antigravity\\ai-youtube-summariser\\app\\www.youtube.com_cookies.txt';
+
 // Audio Summariser uses OpenAI Whisper for Transcription
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -99,13 +106,32 @@ export async function POST(req: Request) {
 
         // Falls back to YouTubei.js if ytdl failed (more robust against bot-checks)
         if (!buffer || buffer.length === 0) {
-          console.log('[Audio-API] Starting YouTubei.js session...');
-          const yt = await Innertube.create();
+          console.log('[Audio-API] Starting YouTubei.js session with cookies...');
+          let cookiesStr = '';
+          try {
+            if (fs.existsSync(YOUTUBE_COOKIES_PATH)) {
+              cookiesStr = fs.readFileSync(YOUTUBE_COOKIES_PATH, 'utf8');
+              console.log('[Audio-API] Cookies file found and loaded.');
+            }
+          } catch (err) {
+            console.warn('[Audio-API] Could not read cookies file:', err);
+          }
+
+          const yt = await Innertube.create({ 
+            cookie: cookiesStr || undefined
+          });
           
           const info = await yt.getInfo(videoId);
           console.log('[Audio-API] YouTubei.js fetched info');
           
-          const stream = await info.download({ type: 'audio', quality: 'best' });
+          // Using best quality audio-only format with extra options to reduce detection
+          const options = {
+            type: 'audio' as const,
+            quality: 'best' as const,
+            format: 'any' as const,
+          };
+
+          const stream = await info.download(options);
           const chunks: Uint8Array[] = [];
           const reader = stream.getReader();
           
@@ -156,15 +182,16 @@ export async function POST(req: Request) {
           const isBotCheck = lowerErr.includes('bot') || lowerErr.includes('sign in');
           const isRestricted = lowerErr.includes('login') || lowerErr.includes('restricted') || lowerErr.includes('age');
           
-          let userMessage = error.message || "Audio transcription failed. Unable to generate summary.";
-          if (isBotCheck) userMessage = "YouTube blocked audio extraction for this video. Audio summarisation is temporarily unavailable.";
-          if (isRestricted) userMessage = "This video is restricted or requires login. Audio summarisation is not available.";
+          let userMessage = `Audio extraction failed: YouTube is restricting this video`;
+          
+          // Log the actual technical error but return the requested user-friendly message
+          console.error('[Audio-API] Final Failure Reason:', error.message);
 
           return NextResponse.json({ 
             success: false,
             mode: "audio",
             error: userMessage
-          }, { status: isRestricted ? 403 : (isBotCheck ? 403 : 422) });
+          }, { status: isRestricted || isBotCheck ? 403 : 422 });
         }
         await new Promise(r => setTimeout(r, 1500));
       }
