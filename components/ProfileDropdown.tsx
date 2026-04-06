@@ -63,7 +63,7 @@ export default function ProfileDropdown({ user }: { user: SupabaseUser }) {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 group outline-none"
       >
-        <div className="w-9 h-9 rounded-full overflow-hidden border border-white/10 ring-2 ring-emerald-500/20 group-hover:ring-emerald-500/50 transition-all">
+        <div className="w-9 h-9 rounded-full overflow-hidden border border-slate-200 dark:border-white/10 ring-2 ring-blue-500/20 group-hover:ring-blue-500/50 transition-all shadow-sm">
           <Image 
             src={user.user_metadata?.avatar_url || 'https://ui-avatars.com/api/?name=' + user.email} 
             alt="User" 
@@ -80,14 +80,14 @@ export default function ProfileDropdown({ user }: { user: SupabaseUser }) {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full right-0 mt-3 w-64 bg-white dark:bg-[#191e16]/90 backdrop-blur-xl border border-emerald-100 dark:border-white/10 rounded-2xl shadow-2xl z-[150] overflow-hidden"
+            className="absolute top-full right-0 mt-3 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-blue-100/50 dark:border-white/10 rounded-2xl shadow-lg z-[150] overflow-hidden"
           >
-            <div className="p-5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02]">
-              <div className="text-sm font-bold text-[#111827] dark:text-white truncate">{user.user_metadata?.full_name || user.email?.split('@')[0]}</div>
+            <div className="p-5 border-b border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
+              <div className="text-sm font-bold text-slate-800 dark:text-white truncate">{user.user_metadata?.full_name || user.email?.split('@')[0]}</div>
               <div className="text-[10px] text-slate-500 truncate mt-0.5">{user.email}</div>
               <div className="mt-3 flex items-center gap-2">
-                <span className="px-1.5 py-0.5 bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[8px] font-bold uppercase tracking-widest rounded border border-emerald-500/20 dark:border-emerald-500/30">Pro Member</span>
-                <span className="text-[10px] text-[#646e5a] dark:text-slate-600 font-medium tracking-tight">ID: #4829</span>
+                <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[8px] font-bold uppercase tracking-widest rounded border border-blue-200 dark:border-blue-800/50">Pro Member</span>
+                <span className="text-[10px] text-slate-500 font-medium tracking-tight">ID: #4829</span>
               </div>
             </div>
 
@@ -99,15 +99,15 @@ export default function ProfileDropdown({ user }: { user: SupabaseUser }) {
                     if (item.href !== '#') router.push(item.href);
                     setIsOpen(false);
                   }}
-                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-[#F3F4F6] dark:hover:bg-white/5 transition-all text-left group"
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all text-left group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 text-[#646e5a] dark:text-slate-400 group-hover:text-emerald-700 dark:group-hover:text-white transition-colors">
+                    <div className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 group-hover:text-blue-600 transition-colors shadow-sm">
                       <item.icon size={16} />
                     </div>
-                    <span className="text-xs font-medium text-[#646e5a] dark:text-slate-300 group-hover:text-[#141e0f] dark:group-hover:text-white transition-colors">{item.label}</span>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 group-hover:text-slate-800 dark:group-hover:text-white transition-colors">{item.label}</span>
                   </div>
-                  <ChevronRight size={12} className="text-[#646e5a] dark:text-slate-600 group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-all group-hover:translate-x-0.5" />
+                  <ChevronRight size={12} className="text-slate-400 group-hover:text-blue-500 transition-all group-hover:translate-x-0.5" />
                 </button>
               ))}
             </div>
@@ -115,12 +115,14 @@ export default function ProfileDropdown({ user }: { user: SupabaseUser }) {
             <div className="p-2 border-t border-slate-100 dark:border-white/5">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-rose-500/10 transition-all text-left group"
+                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 transition-all text-left group"
               >
-                <div className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 group-hover:text-rose-400">
-                  <LogOut size={16} />
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 group-hover:text-red-600 shadow-sm">
+                    <LogOut size={16} />
+                  </div>
+                  <span className="text-xs font-semibold text-red-500 group-hover:text-red-600">Logout Session</span>
                 </div>
-                <span className="text-xs font-semibold text-rose-400/80 group-hover:text-rose-400">Logout Session</span>
               </button>
             </div>
           </motion.div>

@@ -93,9 +93,9 @@ export default function ToolsDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-emerald-600/10 dark:bg-emerald-600/20 text-emerald-700 dark:text-emerald-400 px-3 py-1.5 rounded-lg flex items-center gap-2 hover:bg-emerald-600/20 dark:hover:bg-emerald-600/30 transition-all font-medium text-sm border border-emerald-500/20 dark:border-transparent"
+        className="bg-blue-50/80 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-3 py-1.5 rounded-lg flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors font-medium text-sm border border-blue-200/50 dark:border-white/5 shadow-sm"
       >
-        <Sparkles size={14} className="text-emerald-700 dark:text-emerald-400" />
+        <Sparkles size={14} className="text-blue-500 dark:text-blue-400" />
         AI Tools
         <ChevronDown size={14} className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
@@ -107,7 +107,7 @@ export default function ToolsDropdown() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute top-full right-0 mt-2 w-72 bg-white dark:bg-[#191e16] p-2 border border-emerald-100 dark:border-white/10 rounded-2xl shadow-xl z-[150] overflow-hidden"
+            className="absolute top-full right-0 mt-2 w-72 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl p-2 border border-blue-100/50 dark:border-white/10 rounded-2xl shadow-lg z-[150] overflow-hidden"
           >
             <div className="px-3 py-2 text-[10px] uppercase tracking-wider text-slate-500 font-bold">
               AI Powered Tools
@@ -117,13 +117,13 @@ export default function ToolsDropdown() {
                 <button
                   key={tool.id}
                   onClick={() => handleToolSelect(tool.id)}
-                  className="w-full flex items-start gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-left group"
+                  className="w-full flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-all text-left group"
                 >
-                  <div className={`p-2 rounded-lg bg-slate-100 dark:bg-white/5 group-hover:bg-emerald-500/10 dark:group-hover:bg-white/10 ${tool.color} transition-colors`}>
+                  <div className={`p-2 rounded-lg bg-slate-100 dark:bg-slate-800 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 ${tool.color.replace('emerald', 'blue').replace('amber', 'indigo')} transition-colors shadow-sm`}>
                     <tool.icon size={18} />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-[#141e0f] dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">
+                    <div className="text-sm font-semibold text-slate-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {tool.label}
                     </div>
                     <div className="text-[11px] text-slate-500 leading-tight mt-0.5">

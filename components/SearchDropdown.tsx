@@ -53,7 +53,7 @@ export default function SearchDropdown() {
 
   return (
     <div className="relative group w-64 md:w-80" ref={dropdownRef}>
-      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-[#646e5a] group-focus-within:text-emerald-500 transition-colors">
+      <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-500 transition-colors">
         {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
       </div>
       <input 
@@ -65,7 +65,7 @@ export default function SearchDropdown() {
         }}
         onFocus={() => setIsOpen(true)}
         placeholder="Search summaries..." 
-        className="bg-[#f0f4e6]/50 dark:bg-white/5 border border-emerald-100/50 dark:border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-full focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-[#141e0f] dark:text-white"
+        className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200/50 dark:border-white/10 rounded-xl py-2 pl-10 pr-4 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all shadow-inner text-slate-800 dark:text-white placeholder:text-slate-400"
       />
 
       <AnimatePresence>
@@ -74,11 +74,11 @@ export default function SearchDropdown() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute top-full left-0 mt-2 w-full bg-white dark:bg-[#191e16] border border-emerald-100 dark:border-white/10 rounded-2xl p-2 shadow-2xl z-[150] overflow-hidden"
+            className="absolute top-full left-0 mt-2 w-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-blue-100/50 dark:border-white/10 rounded-2xl p-2 shadow-lg z-[150] overflow-hidden"
           >
             {loading ? (
-              <div className="px-4 py-8 text-center text-xs text-[#646e5a] flex flex-col items-center gap-2">
-                <Loader2 size={24} className="animate-spin text-emerald-500" />
+              <div className="px-4 py-8 text-center text-xs text-slate-500 flex flex-col items-center gap-2">
+                <Loader2 size={24} className="animate-spin text-blue-500" />
                 Searching...
               </div>
             ) : results.length > 0 ? (
@@ -91,20 +91,20 @@ export default function SearchDropdown() {
                     key={result.id}
                     href={`/summarise?id=${result.id}`}
                     onClick={() => setIsOpen(false)}
-                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-[#f0f4e6] dark:hover:bg-white/5 transition-all group"
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50/50 dark:hover:bg-slate-800/50 transition-all group"
                   >
-                    <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
+                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-slate-800 text-blue-600 shadow-sm">
                       <Youtube size={16} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-xs font-semibold text-[#141e0f] dark:text-white truncate group-hover:text-emerald-700 transition-colors">
+                      <div className="text-xs font-semibold text-slate-800 dark:text-white truncate group-hover:text-blue-600 transition-colors">
                         {result.video_title}
                       </div>
-                      <div className="text-[10px] text-[#646e5a] dark:text-slate-500 truncate mt-0.5">
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">
                         {result.summary}
                       </div>
                     </div>
-                    <ArrowRight size={12} className="text-slate-600 group-hover:text-white transition-colors self-center" />
+                    <ArrowRight size={12} className="text-slate-400 group-hover:text-blue-500 transition-colors self-center" />
                   </Link>
                 ))}
               </div>

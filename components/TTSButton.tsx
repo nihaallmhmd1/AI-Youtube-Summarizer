@@ -125,17 +125,17 @@ export default function TTSButton({ text, language = 'English' }: TTSButtonProps
   return (
     <button
       onClick={handleSpeak}
-      className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 transition-all flex items-center gap-2 group"
+      className="px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2 group border border-blue-100 dark:border-blue-800/30 shadow-sm"
       title={isPlaying ? 'Stop listening' : 'Listen to this'}
     >
       {isLoading ? (
-        <Loader2 size={16} className="animate-spin" />
+        <Loader2 size={14} className="animate-spin" />
       ) : isPlaying ? (
-        <CircleStop size={16} className="text-rose-500" />
+        <CircleStop size={14} className="text-red-500 group-hover:scale-110 transition-transform" />
       ) : (
-        <Volume2 size={16} className="group-hover:scale-110 transition-transform" />
+        <Volume2 size={14} className="group-hover:scale-110 transition-transform" />
       )}
-      <span className="text-[10px] font-black uppercase tracking-widest hidden md:inline">
+      <span className="text-[11px] font-semibold uppercase tracking-wider hidden md:inline">
         {isPlaying ? 'Stop' : 'Listen'}
       </span>
     </button>

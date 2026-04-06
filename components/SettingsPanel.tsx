@@ -99,7 +99,7 @@ export default function SettingsPanel() {
     <div className="relative" ref={panelRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className={`p-2 transition-all group rounded-xl ${isOpen ? 'bg-emerald-500/10 text-emerald-600' : 'text-[#646e5a] hover:text-[#141e0f] dark:text-slate-400 dark:hover:text-white'}`}
+        className={`p-2 transition-all group rounded-xl ${isOpen ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'}`}
       >
         <Settings size={20} className={`${isOpen ? 'rotate-90' : 'group-hover:rotate-45'} transition-transform duration-500`} />
       </button>
@@ -111,32 +111,32 @@ export default function SettingsPanel() {
             animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
             exit={{ opacity: 0, y: 15, scale: 0.95, filter: 'blur(10px)' }}
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className="absolute top-full right-0 mt-3 w-96 h-[600px] bg-white/95 dark:bg-[#191e16]/90 backdrop-blur-2xl border border-emerald-100 dark:border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-[155] rounded-[2rem] flex flex-col overflow-hidden origin-top-right"
+            className="absolute top-full right-0 mt-3 w-96 h-[600px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-blue-100/50 dark:border-white/10 shadow-xl z-[155] rounded-3xl flex flex-col overflow-hidden origin-top-right"
           >
             <div className="p-6 border-b border-slate-100 dark:border-white/5 flex items-center justify-between bg-white/50 dark:bg-transparent">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-600 dark:text-emerald-400">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl text-blue-600 dark:text-blue-400 shadow-sm">
                   <Settings size={22} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 dark:text-white italic uppercase tracking-tighter">System Settings</h2>
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Personalize Experience</p>
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">System Settings</h2>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Personalize Experience</p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-xl text-slate-400 transition-all"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl text-slate-400 hover:text-slate-800 dark:hover:text-white transition-all shadow-sm"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8 space-y-12 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
               {configOptions.map((section) => (
-                <div key={section.id} className="space-y-6">
-                  <div className="flex items-center gap-3 text-[#646e5a] dark:text-slate-500">
-                    <section.icon size={16} className="text-emerald-600" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">{section.label}</span>
+                <div key={section.id} className="space-y-4">
+                  <div className="flex items-center gap-2 text-slate-500">
+                    <section.icon size={16} className="text-blue-600 dark:text-blue-400" />
+                    <span className="text-[11px] font-semibold uppercase tracking-wider">{section.label}</span>
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
@@ -148,21 +148,21 @@ export default function SettingsPanel() {
                           key={option.id}
                           onClick={() => section.setter(option.id)}
                           className={`
-                            relative p-5 rounded-2xl border transition-all text-left flex items-center gap-4 group
+                            relative p-4 rounded-xl transition-all text-left flex items-center gap-4 group shadow-sm backdrop-blur-md border border-slate-100 dark:border-slate-800
                             ${section.current === option.id 
-                              ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-700 dark:text-white shadow-lg shadow-emerald-500/5' 
-                              : 'bg-slate-50 dark:bg-white/[0.02] border-slate-100 dark:border-white/5 text-[#646e5a] dark:text-slate-400 hover:border-emerald-500/20 hover:bg-slate-100 dark:hover:bg-white/5'}
+                              ? 'bg-blue-50/80 dark:bg-blue-900/20 border-blue-200/50 dark:border-blue-800/30 text-blue-700 dark:text-blue-400' 
+                              : 'bg-white/80 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 hover:border-blue-200/50 hover:bg-slate-50 dark:hover:bg-slate-800/80'}
                           `}
                         >
                           {'icon' in option && option.icon && (
-                            <div className={`p-2.5 rounded-xl transition-colors ${section.current === option.id ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/30' : 'bg-slate-200 dark:bg-white/5 text-slate-400'}`}>
+                            <div className={`p-2.5 rounded-xl transition-colors ${section.current === option.id ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 group-hover:text-blue-500'}`}>
                               <option.icon size={18} />
                             </div>
                           )}
-                          <span className="text-xs font-bold tracking-tight flex-1">{option.label}</span>
+                          <span className="text-sm font-semibold tracking-tight flex-1">{option.label}</span>
                           {section.current === option.id && (
-                            <div className="text-emerald-700 dark:text-emerald-400">
-                              <Check size={16} strokeWidth={3} />
+                            <div className="text-blue-600 dark:text-blue-400 pr-2">
+                              <Check size={18} strokeWidth={3} />
                             </div>
                           )}
                         </button>
@@ -173,11 +173,12 @@ export default function SettingsPanel() {
               ))}
             </div>
 
-            <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.01]">
+            <div className="p-6 border-t border-slate-100 dark:border-white/5 bg-slate-50/80 dark:bg-slate-900/50 backdrop-blur-md">
               <button 
                 onClick={() => setIsOpen(false)}
-                className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 uppercase tracking-widest"
+                className="w-full py-3.5 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition-all shadow-sm hover:shadow hover:-translate-y-0.5 outline-none flex items-center justify-center uppercase tracking-wider relative overflow-hidden group/btn"
               >
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite]" />
                 Save Preferences
               </button>
             </div>
