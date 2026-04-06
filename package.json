@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
     "@google-cloud/speech": "^7.3.0",
     "@google/generative-ai": "^0.24.1",
     "@supabase/ssr": "^0.9.0",

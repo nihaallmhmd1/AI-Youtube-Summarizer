@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
-import ytdl from 'ytdl-core';
+import ytdl from '@distube/ytdl-core';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
@@ -61,49 +61,84 @@ export async function POST(req: Request) {
       metadataFailed = true;
     }
 
-    // Step 2: Extract Audio Source & Transcribe with Whisper
+    // Step 2: Extract Audio Source & Transcribe with Whisper (with retry logic)
     let transcriptText = '';
-    try {
-      console.log('[Audio-API] Extracting audio stream...');
-      const stream = ytdl(videoId, {
-        quality: 'lowestaudio',
-        filter: 'audioonly',
-      });
+    const MAX_RETRIES = 2;
+    let attempt = 0;
+    let audioSuccess = false;
 
-      // We need to convert the stream to a file-like object for OpenAI Whisper
-      // Since we are in an Edge/Serverless environment, we'll try to use a Buffer
-      const chunks: Buffer[] = [];
-      for await (const chunk of stream) {
-        chunks.push(chunk);
+    while (attempt < MAX_RETRIES && !audioSuccess) {
+      attempt++;
+      try {
+        console.log(`[Audio-API] [Attempt ${attempt}] Extracting audio stream for ${videoId}...`);
+        
+        // Fresh video info with no caching
+        const info = await ytdl.getInfo(videoId, { 
+          requestOptions: {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': '*/*',
+              'Accept-Language': 'en-US,en;q=0.9',
+            }
+          }
+        });
+
+        // Robust format selection: filter for audioonly and sort by quality
+        const format = ytdl.chooseFormat(info.formats, { 
+          quality: 'highestaudio', 
+          filter: 'audioonly' 
+        });
+
+        if (!format || !format.url) {
+          throw new Error("No valid audio format found.");
+        }
+
+        console.log(`[Audio-API] Selected format: ${format.mimeType}, itag: ${format.itag}`);
+        
+        const stream = ytdl.downloadFromInfo(info, { format });
+
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(chunk);
+        }
+        const buffer = Buffer.concat(chunks);
+        
+        if (buffer.length === 0) throw new Error("Audio buffer is empty.");
+        
+        console.log(`[Audio-API] Audio download complete. Size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+        console.log('[Audio-API] Transcribing with Whisper...');
+        
+        const file = new File([buffer], "audio.mp3", { type: "audio/mp3" });
+        
+        const transcription = await openai.audio.transcriptions.create({
+          file: file,
+          model: "whisper-1",
+          language: language === 'English' ? 'en' : undefined,
+        });
+
+        transcriptText = transcription.text;
+        if (!transcriptText || transcriptText.length < 50) {
+          throw new Error("Transcribed text is too short to generate a reliable summary.");
+        }
+        
+        audioSuccess = true;
+        console.log('[Audio-API] Transcription success');
+
+      } catch (error: any) {
+        console.error(`[Audio-API] Attempt ${attempt} failed:`, error.message);
+        if (attempt >= MAX_RETRIES) {
+          const is410 = error.message?.includes('410') || error.status === 410;
+          return NextResponse.json({ 
+            success: false,
+            mode: "audio",
+            error: is410 
+              ? "Audio stream expired or unavailable (410). Please retry in a moment." 
+              : error.message || "Audio transcription failed. Unable to generate summary."
+          }, { status: is410 ? 410 : 422 });
+        }
+        // Small delay before retry
+        await new Promise(r => setTimeout(r, 1000));
       }
-      const buffer = Buffer.concat(chunks);
-      
-      // OpenAI Whisper expects a file. In Node/Next, we can use a FormData approach
-      // Note: Whisper has a 25MB limit. For longer videos, we might need chunking.
-      console.log('[Audio-API] Transcribing with Whisper...');
-      
-      // Whisper File requirements
-      const file = new File([buffer], "audio.mp3", { type: "audio/mp3" });
-      
-      const transcription = await openai.audio.transcriptions.create({
-        file: file,
-        model: "whisper-1",
-        language: language === 'English' ? 'en' : undefined,
-      });
-
-      transcriptText = transcription.text;
-      if (!transcriptText || transcriptText.length < 50) {
-        throw new Error("Transcribed text is too short to generate a reliable summary.");
-      }
-      console.log('[Audio-API] Transcription success');
-
-    } catch (error: any) {
-      console.error('[Audio-API] Audio pipeline failed:', error.message);
-      return NextResponse.json({ 
-        success: false,
-        mode: "audio",
-        error: error.message || "Audio transcription failed. Unable to generate summary." 
-      }, { status: 422 });
     }
 
     // Step 3: Send to Gemini for Analysis
