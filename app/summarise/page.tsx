@@ -140,7 +140,7 @@ function SummariserContent() {
         if (data.metadata_failed) {
           setNotice('Video details unavailable, continuing with audio summarisation.');
         } else {
-          setNotice('Audio-based summary generated successfully.');
+          setNotice(null); // No special success notice needed for audio if it just works
         }
       } else if (data.status === 'fallback_summary_used') {
         setNotice('Summary generated using fallback AI mode.');
