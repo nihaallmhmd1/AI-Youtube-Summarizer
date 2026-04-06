@@ -28,24 +28,24 @@ export default function DashboardContainer({
   }, [supabase]);
 
   return (
-    <div className="flex min-h-screen bg-[#fdfcf0] dark:bg-[#0f140c] text-[#141e0f] dark:text-white transition-colors duration-300 selection:bg-emerald-500/30">
+    <div className="flex min-h-screen bg-gradient-to-br from-[#f8fbff] via-[#eef6ff] to-[#f5f9ff] dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 selection:bg-blue-500/20">
       {/* Dynamic Background */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-emerald-600/[0.02] dark:bg-emerald-600/10 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-teal-600/[0.02] dark:bg-teal-600/10 blur-[120px] rounded-full" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100/40 dark:bg-blue-900/10 blur-3xl rounded-full mix-blend-multiply dark:mix-blend-lighten opacity-70 animate-pulse" />
+        <div className="absolute bottom-[10%] right-[-5%] w-[35%] h-[35%] bg-indigo-100/40 dark:bg-indigo-900/10 blur-3xl rounded-full mix-blend-multiply dark:mix-blend-lighten opacity-70 animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
       <Sidebar />
       
       <div className="flex-1 flex flex-col relative z-10 h-screen overflow-hidden">
         {/* Premium Top Navigation */}
-        <header className="h-20 border-b border-slate-100 dark:border-white/5 backdrop-blur-xl bg-white/90 dark:bg-black/40 flex items-center justify-between px-10 flex-shrink-0 relative z-[100] transition-colors duration-300 shadow-sm">
-          <div className="flex items-center gap-12">
-            <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-[#646e5a] dark:text-slate-400">
-              <Link href="/dashboard/resources" className="hover:text-emerald-700 dark:hover:text-white transition-colors">Resources</Link>
-              <Link href="/dashboard/pricing" className="hover:text-emerald-700 dark:hover:text-white transition-colors">Pricing</Link>
-              <Link href="/dashboard/api" className="hover:text-emerald-700 dark:hover:text-white transition-colors">API</Link>
-              <Link href="/dashboard/contact" className="hover:text-emerald-700 dark:hover:text-white transition-colors">Contact Us</Link>
+        <header className="h-16 border-b border-blue-50/50 dark:border-white/5 backdrop-blur-md bg-white/30 dark:bg-slate-950/30 flex items-center justify-between px-8 flex-shrink-0 relative z-[100] transition-colors duration-300 shadow-sm">
+          <div className="flex items-center gap-10">
+            <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
+              <Link href="/dashboard/resources" className="hover:text-blue-600 dark:hover:text-white transition-colors">Resources</Link>
+              <Link href="/dashboard/pricing" className="hover:text-blue-600 dark:hover:text-white transition-colors">Pricing</Link>
+              <Link href="/dashboard/api" className="hover:text-blue-600 dark:hover:text-white transition-colors">API</Link>
+              <Link href="/dashboard/contact" className="hover:text-blue-600 dark:hover:text-white transition-colors">Contact Us</Link>
             </div>
             
             <SearchDropdown />

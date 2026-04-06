@@ -46,19 +46,18 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-80 border-r border-[#d4e6b5] dark:border-white/5 bg-[#fdfcf0]/80 dark:bg-[#0f140c]/60 backdrop-blur-2xl relative z-20 flex flex-col h-screen flex-shrink-0 transition-colors duration-300 shadow-xl shadow-emerald-900/5">
-      <div className="p-10">
-        <div className="flex items-center gap-3 mb-10 group">
-          <div className="bg-gradient-to-tr from-emerald-500 to-teal-600 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform duration-500">
-            <Youtube size={26} />
+    <aside className="w-64 border-r border-blue-50/50 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md relative z-20 flex flex-col h-screen flex-shrink-0 transition-colors duration-300 shadow-[2px_0_8px_rgba(0,0,0,0.02)] dark:shadow-none">
+      <div className="p-6">
+        <div className="flex items-center gap-2.5 mb-8 group cursor-pointer">
+          <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-2 rounded-xl text-white shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform duration-300 ease-out">
+            <Youtube size={20} />
           </div>
           <div>
-            <span className="text-xl font-bold tracking-tight text-[#141e0f] dark:text-white block italic">AI Summariser</span>
-            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 tracking-[0.2em] uppercase">Premium SaaS</span>
+            <span className="text-base font-bold tracking-tight text-slate-800 dark:text-white block group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">AI Summariser</span>
           </div>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="space-y-1.5">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -66,21 +65,18 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group relative border",
+                  "flex items-center justify-between p-3 rounded-xl transition-all duration-300 group relative border",
                   isActive 
-                    ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20 dark:bg-white/5 dark:text-white dark:border-white/10 shadow-lg shadow-emerald-500/5 dark:shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-                    : "text-slate-500 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-white hover:bg-emerald-50/50 dark:hover:bg-white/5 border-transparent"
+                    ? "bg-white/60 text-blue-600 border-blue-100/50 dark:bg-white/10 dark:text-blue-400 dark:border-white/10 shadow-sm" 
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-white/40 dark:hover:bg-white/5 border-transparent"
                 )}
               >
-                <div className="flex items-center gap-4">
-                  <item.icon size={20} className={cn("transition-colors duration-300", isActive ? "text-emerald-600 dark:text-emerald-400" : "group-hover:text-emerald-600 dark:group-hover:text-emerald-400")} />
-                  <span className="font-bold text-sm">{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <item.icon size={18} className={cn("transition-colors duration-300", isActive ? "text-blue-600 dark:text-blue-400" : "group-hover:text-blue-500 dark:group-hover:text-blue-400")} />
+                  <span className="font-semibold text-[13px]">{item.label}</span>
                 </div>
-                {isActive && (
-                  <div className="absolute left-[-2.5rem] w-1.5 h-8 bg-emerald-500 rounded-full blur-[2px]" />
-                )}
                 <ChevronRight 
-                  size={16} 
+                  size={14} 
                   className={cn(
                     "transition-all duration-300", 
                     isActive ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0"
@@ -92,29 +88,29 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-8 space-y-6">
-        <div className="bg-gradient-to-br from-emerald-600/[0.05] to-teal-600/[0.05] dark:from-emerald-600/5 dark:to-teal-600/5 border border-emerald-500/10 rounded-3xl p-6 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 blur-[40px] rounded-full group-hover:scale-150 transition-transform duration-700" />
-          <div className="relative z-10 flex items-center gap-3 mb-4">
-            <Sparkles size={18} className="text-amber-500 dark:text-amber-400" />
-            <span className="text-xs font-black text-[#111827] dark:text-white uppercase tracking-wider">Upgrade Pro</span>
+      <div className="mt-auto p-6 space-y-4">
+        <div className="bg-white/60 dark:bg-slate-800/50 border border-blue-100/50 dark:border-white/10 rounded-2xl p-4 relative overflow-hidden group shadow-sm hover:shadow-md transition-shadow duration-300">
+          <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-100/50 dark:bg-blue-900/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-700" />
+          <div className="relative z-10 flex items-center gap-2 mb-2">
+            <Sparkles size={14} className="text-blue-600 dark:text-blue-400" />
+            <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Upgrade Pro</span>
           </div>
-          <p className="text-[11px] font-medium text-slate-500 mb-5 relative z-10 leading-relaxed">Get unlimited summaries & 4K processing.</p>
+          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-4 relative z-10 leading-relaxed">Unlimited summaries & 4K processing.</p>
           <Link href="/dashboard/pricing" className="w-full block">
-            <button className="w-full bg-emerald-700 hover:bg-emerald-600 dark:bg-white/5 dark:hover:bg-white/10 border border-emerald-500/20 dark:border-white/10 text-white text-[11px] font-black py-3 rounded-xl transition-all relative z-10 uppercase tracking-widest shadow-xl shadow-emerald-600/20 dark:shadow-none">
-              View Pricing
+            <button className="w-full bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-[10px] font-semibold py-2 rounded-xl transition-all relative z-10 tracking-widest shadow-sm hover:shadow hover:-translate-y-0.5">
+              VIEW PRICING
             </button>
           </Link>
         </div>
 
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 p-4 text-slate-500 dark:text-slate-400 hover:text-rose-500 rounded-2xl transition-all duration-300 hover:bg-rose-500/5 group"
+          className="w-full flex items-center gap-3 p-3 text-slate-500 dark:text-slate-400 hover:text-red-600 rounded-xl transition-all duration-300 hover:bg-white/60 dark:hover:bg-red-500/10 group border border-transparent hover:border-red-100 dark:hover:border-red-900/30"
         >
-          <div className="bg-slate-100 dark:bg-white/5 p-2.5 rounded-xl group-hover:bg-rose-500/10 transition-colors">
-            <LogOut size={18} />
+          <div className="bg-white/50 dark:bg-slate-800 p-2 rounded-lg group-hover:bg-red-50 dark:group-hover:bg-red-500/20 transition-colors shadow-sm">
+            <LogOut size={16} />
           </div>
-          <span className="font-bold text-xs uppercase tracking-widest">Logout Session</span>
+          <span className="font-semibold text-[11px] uppercase tracking-wider">Logout</span>
         </button>
       </div>
     </aside>
