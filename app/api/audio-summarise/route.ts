@@ -152,14 +152,19 @@ export async function POST(req: Request) {
       } catch (error: any) {
         console.error(`[Audio-API] Attempt ${attempt} failed:`, error.message);
         if (attempt >= MAX_RETRIES) {
-          const isBotCheck = error.message?.toLowerCase().includes('bot') || error.message?.toLowerCase().includes('sign in');
+          const lowerErr = error.message?.toLowerCase() || '';
+          const isBotCheck = lowerErr.includes('bot') || lowerErr.includes('sign in');
+          const isRestricted = lowerErr.includes('login') || lowerErr.includes('restricted') || lowerErr.includes('age');
+          
+          let userMessage = error.message || "Audio transcription failed. Unable to generate summary.";
+          if (isBotCheck) userMessage = "YouTube blocked audio extraction for this video. Audio summarisation is temporarily unavailable.";
+          if (isRestricted) userMessage = "This video is restricted or requires login. Audio summarisation is not available.";
+
           return NextResponse.json({ 
             success: false,
             mode: "audio",
-            error: isBotCheck 
-              ? "YouTube blocked audio extraction for this video. Audio summarisation is temporarily unavailable." 
-              : error.message || "Audio transcription failed. Unable to generate summary."
-          }, { status: isBotCheck ? 403 : 422 });
+            error: userMessage
+          }, { status: isRestricted ? 403 : (isBotCheck ? 403 : 422) });
         }
         await new Promise(r => setTimeout(r, 1500));
       }
