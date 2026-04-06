@@ -93,14 +93,9 @@ export default function Sidebar() {
           <div className="absolute -top-10 -right-10 w-24 h-24 bg-blue-100/50 dark:bg-blue-900/20 blur-2xl rounded-full group-hover:scale-150 transition-transform duration-700" />
           <div className="relative z-10 flex items-center gap-2 mb-2">
             <Sparkles size={14} className="text-blue-600 dark:text-blue-400" />
-            <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Upgrade Pro</span>
+            <span className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Premium Access</span>
           </div>
-          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-4 relative z-10 leading-relaxed">Unlimited summaries & 4K processing.</p>
-          <Link href="/dashboard/pricing" className="w-full block">
-            <button className="w-full bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-[10px] font-semibold py-2 rounded-xl transition-all relative z-10 tracking-widest shadow-sm hover:shadow hover:-translate-y-0.5">
-              VIEW PRICING
-            </button>
-          </Link>
+          <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 mb-0 relative z-10 leading-relaxed">Intelligence processing active.</p>
         </div>
 
         <button

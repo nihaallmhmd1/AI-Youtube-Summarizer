@@ -40,25 +40,24 @@ export default function DashboardContainer({
       <div className="flex-1 flex flex-col relative z-10 h-screen overflow-hidden">
         {/* Premium Top Navigation */}
         <header className="h-16 border-b border-blue-50/50 dark:border-white/5 backdrop-blur-md bg-white/30 dark:bg-slate-950/30 flex items-center justify-between px-8 flex-shrink-0 relative z-[100] transition-colors duration-300 shadow-sm">
-          <div className="flex items-center gap-10">
-            <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-slate-500 dark:text-slate-400">
-              <Link href="/dashboard/resources" className="hover:text-blue-600 dark:hover:text-white transition-colors">Resources</Link>
-              <Link href="/dashboard/pricing" className="hover:text-blue-600 dark:hover:text-white transition-colors">Pricing</Link>
-              <Link href="/dashboard/api" className="hover:text-blue-600 dark:hover:text-white transition-colors">API</Link>
-              <Link href="/dashboard/contact" className="hover:text-blue-600 dark:hover:text-white transition-colors">Contact Us</Link>
+          <div className="flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-6 text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              <Link href="/dashboard/contact" className="hover:text-blue-600 dark:hover:text-white transition-colors">Contact Support</Link>
             </div>
-            
+            <div className="w-[1px] h-6 bg-slate-200 dark:bg-white/10 hidden lg:block" />
             <SearchDropdown />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <ToolsDropdown />
-            <NotificationDropdown />
-            <SettingsPanel />
+            <div className="flex items-center gap-2">
+              <NotificationDropdown />
+              <SettingsPanel />
+            </div>
             
             {user && (
               <>
-                <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-2" />
+                <div className="h-8 w-[1px] bg-slate-200 dark:bg-white/10 mx-1" />
                 <ProfileDropdown user={user} />
               </>
             )}
