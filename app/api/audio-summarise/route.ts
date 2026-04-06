@@ -6,6 +6,7 @@ import ytdl from '@distube/ytdl-core';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
+import { Innertube, UniversalCache } from 'youtubei.js';
 
 // Initialize Gemini SDK
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
@@ -70,45 +71,69 @@ export async function POST(req: Request) {
     while (attempt < MAX_RETRIES && !audioSuccess) {
       attempt++;
       try {
-        console.log(`[Audio-API] [Attempt ${attempt}] Extracting audio stream for ${videoId}...`);
+        console.log(`[Audio-API] [Attempt ${attempt}] Pipeline start for ${videoId}...`);
         
-        // Fresh video info with no caching
-        const info = await ytdl.getInfo(videoId, { 
-          requestOptions: {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-              'Accept': '*/*',
-              'Accept-Language': 'en-US,en;q=0.9',
+        let buffer: Buffer | null = null;
+
+        // Try Distube ytdl-core first (faster)
+        try {
+          console.log('[Audio-API] Trying extraction via Distube/ytdl-core...');
+          const info = await ytdl.getInfo(videoId, { 
+            requestOptions: {
+              headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              }
             }
+          });
+          const format = ytdl.chooseFormat(info.formats, { quality: 'highestaudio', filter: 'audioonly' });
+          if (format && format.url) {
+            const stream = ytdl.downloadFromInfo(info, { format });
+            const chunks: Buffer[] = [];
+            for await (const chunk of stream) chunks.push(chunk);
+            buffer = Buffer.concat(chunks);
+            console.log('[Audio-API] ytdl-core extraction: SUCCESS');
           }
-        });
-
-        // Robust format selection: filter for audioonly and sort by quality
-        const format = ytdl.chooseFormat(info.formats, { 
-          quality: 'highestaudio', 
-          filter: 'audioonly' 
-        });
-
-        if (!format || !format.url) {
-          throw new Error("No valid audio format found.");
+        } catch (ytdlErr: any) {
+          console.warn('[Audio-API] ytdl-core failed, attempting youtubei.js fallback:', ytdlErr.message);
         }
 
-        console.log(`[Audio-API] Selected format: ${format.mimeType}, itag: ${format.itag}`);
-        
-        const stream = ytdl.downloadFromInfo(info, { format });
-
-        const chunks: Buffer[] = [];
-        for await (const chunk of stream) {
-          chunks.push(chunk);
+        // Falls back to YouTubei.js if ytdl failed (more robust against bot-checks)
+        if (!buffer || buffer.length === 0) {
+          console.log('[Audio-API] Starting YouTubei.js session...');
+          const yt = await Innertube.create();
+          
+          const info = await yt.getInfo(videoId);
+          console.log('[Audio-API] YouTubei.js fetched info');
+          
+          const stream = await info.download({ type: 'audio', quality: 'best' });
+          const chunks: Uint8Array[] = [];
+          const reader = stream.getReader();
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) chunks.push(value);
+          }
+          
+          // Combine chunks into a single Buffer
+          const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+          buffer = Buffer.alloc(totalLength);
+          let offset = 0;
+          for (const chunk of chunks) {
+            buffer.set(chunk, offset);
+            offset += chunk.length;
+          }
+          console.log('[Audio-API] YouTubei.js extraction: SUCCESS');
         }
-        const buffer = Buffer.concat(chunks);
+
+        if (!buffer || buffer.length === 0) throw new Error("All extraction methods failed to produce an audio buffer.");
         
-        if (buffer.length === 0) throw new Error("Audio buffer is empty.");
+        console.log(`[Audio-API] Audio ready. Size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
+        console.log('[Audio-API] Sending to Whisper...');
         
-        console.log(`[Audio-API] Audio download complete. Size: ${(buffer.length / 1024 / 1024).toFixed(2)} MB`);
-        console.log('[Audio-API] Transcribing with Whisper...');
-        
-        const file = new File([buffer], "audio.mp3", { type: "audio/mp3" });
+        // Convert Buffer to Uint8Array for Whisper compatibility
+        const uint8Array = new Uint8Array(buffer);
+        const file = new File([uint8Array], "audio.mp3", { type: "audio/mp3" });
         
         const transcription = await openai.audio.transcriptions.create({
           file: file,
@@ -122,22 +147,21 @@ export async function POST(req: Request) {
         }
         
         audioSuccess = true;
-        console.log('[Audio-API] Transcription success');
+        console.log('[Audio-API] Pipeline success');
 
       } catch (error: any) {
         console.error(`[Audio-API] Attempt ${attempt} failed:`, error.message);
         if (attempt >= MAX_RETRIES) {
-          const is410 = error.message?.includes('410') || error.status === 410;
+          const isBotCheck = error.message?.toLowerCase().includes('bot') || error.message?.toLowerCase().includes('sign in');
           return NextResponse.json({ 
             success: false,
             mode: "audio",
-            error: is410 
-              ? "Audio stream expired or unavailable (410). Please retry in a moment." 
+            error: isBotCheck 
+              ? "YouTube blocked audio extraction for this video. Audio summarisation is temporarily unavailable." 
               : error.message || "Audio transcription failed. Unable to generate summary."
-          }, { status: is410 ? 410 : 422 });
+          }, { status: isBotCheck ? 403 : 422 });
         }
-        // Small delay before retry
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 1500));
       }
     }
 
