@@ -132,12 +132,14 @@ function SummariserContent() {
       });
       let data = await response.json();
       
-      if (!response.ok) throw new Error(data.message || 'Something went wrong');
+      if (!response.ok || (summarizeMode === 'audio' && data.success === false)) {
+        throw new Error(data.error || data.message || 'Summarisation failed');
+      }
 
-      if (data.status === 'fallback_summary_used') {
-        setNotice('Summary generated using fallback AI mode.');
-      } else if (summarizeMode === 'audio') {
+      if (summarizeMode === 'audio') {
         setNotice('Audio-based summary generated successfully.');
+      } else if (data.status === 'fallback_summary_used') {
+        setNotice('Summary generated using fallback AI mode.');
       } else {
         setNotice(null);
       }

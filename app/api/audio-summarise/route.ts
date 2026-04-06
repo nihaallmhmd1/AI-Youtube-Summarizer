@@ -54,9 +54,14 @@ export async function POST(req: Request) {
     let videoTitle = 'YouTube Video';
     try {
       const info = await ytdl.getBasicInfo(videoId);
-      videoTitle = info.videoDetails.title;
+      videoTitle = info?.videoDetails?.title || 'YouTube Video';
     } catch (e) {
       console.error('[Audio-API] Metadata fetch failed');
+      return NextResponse.json({ 
+        success: false,
+        mode: "audio",
+        error: "Failed to access video metadata. Audio summarisation aborted." 
+      }, { status: 400 });
     }
 
     // Step 2: Extract Audio Source & Transcribe with Whisper
@@ -90,11 +95,18 @@ export async function POST(req: Request) {
       });
 
       transcriptText = transcription.text;
+      if (!transcriptText || transcriptText.length < 50) {
+        throw new Error("Transcribed text is too short to generate a reliable summary.");
+      }
       console.log('[Audio-API] Transcription success');
 
     } catch (error: any) {
       console.error('[Audio-API] Audio pipeline failed:', error.message);
-      return NextResponse.json({ error: "Audio transcription failed" }, { status: 500 });
+      return NextResponse.json({ 
+        success: false,
+        mode: "audio",
+        error: error.message || "Audio transcription failed. Unable to generate summary." 
+      }, { status: 422 });
     }
 
     // Step 3: Send to Gemini for Analysis
@@ -148,20 +160,26 @@ export async function POST(req: Request) {
 
     // Optional: Store in Supabase
     if (mode === 'standard' && language === 'English') {
-      await supabase.from('summaries').insert({
-        user_id: user.id, 
-        video_url: videoUrl, 
-        video_title: finalTitle, 
-        summary: responseData.summary,
-        key_points: responseData.key_points, 
-        highlights: responseData.highlights, 
-        key_takeaways: responseData.key_takeaways, 
-        video_id: videoId,
-        metadata: { mode: "audio" }
-      });
+      try {
+        await supabase.from('summaries').insert({
+          user_id: user.id, 
+          video_url: videoUrl, 
+          video_title: finalTitle, 
+          summary: responseData.summary,
+          key_points: responseData.key_points, 
+          highlights: responseData.highlights, 
+          key_takeaways: responseData.key_takeaways, 
+          video_id: videoId,
+          metadata: { mode: "audio" }
+        });
+      } catch (dbErr) {
+        console.error('[Audio-API] DB logging failed', dbErr);
+      }
     }
 
     return NextResponse.json({
+      success: true,
+      mode: "audio",
       ...responseData,
       title: finalTitle,
       videoId,
@@ -171,6 +189,10 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('[Audio-API] Global Error:', error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ 
+      success: false,
+      mode: "audio",
+      error: error.message || "Internal Server Error" 
+    }, { status: 500 });
   }
 }
