@@ -137,7 +137,11 @@ function SummariserContent() {
       }
 
       if (summarizeMode === 'audio') {
-        setNotice('Audio-based summary generated successfully.');
+        if (data.metadata_failed) {
+          setNotice('Video details unavailable, continuing with audio summarisation.');
+        } else {
+          setNotice('Audio-based summary generated successfully.');
+        }
       } else if (data.status === 'fallback_summary_used') {
         setNotice('Summary generated using fallback AI mode.');
       } else {

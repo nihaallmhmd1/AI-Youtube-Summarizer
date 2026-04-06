@@ -50,18 +50,15 @@ export async function POST(req: Request) {
     const videoId = videoIdMatch ? videoIdMatch[1] : null;
     if (!videoId) return NextResponse.json({ message: 'Invalid YouTube URL' }, { status: 400 });
 
-    // Step 1: Get Video Meta
+    // Step 1: Get Video Meta (Non-blocking for Audio Mode)
     let videoTitle = 'YouTube Video';
+    let metadataFailed = false;
     try {
       const info = await ytdl.getBasicInfo(videoId);
       videoTitle = info?.videoDetails?.title || 'YouTube Video';
     } catch (e) {
-      console.error('[Audio-API] Metadata fetch failed');
-      return NextResponse.json({ 
-        success: false,
-        mode: "audio",
-        error: "Failed to access video metadata. Audio summarisation aborted." 
-      }, { status: 400 });
+      console.warn('[Audio-API] Metadata fetch failed - but continuing with audio extraction');
+      metadataFailed = true;
     }
 
     // Step 2: Extract Audio Source & Transcribe with Whisper
@@ -180,11 +177,12 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       mode: "audio",
+      metadata_failed: metadataFailed,
       ...responseData,
       title: finalTitle,
       videoId,
       status: "audio_summarised",
-      message: "Summary generated using audio-based AI pipeline."
+      message: metadataFailed ? "Summary generated using audio-based AI pipeline (Video metadata unavailable)." : "Summary generated using audio-based AI pipeline."
     });
 
   } catch (error: any) {
